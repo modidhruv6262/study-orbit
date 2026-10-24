@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { 
   GraduationCap, 
   ArrowRight, 
-  Sparkles, 
   BookOpen, 
   Clock, 
   ShieldCheck, 
@@ -55,23 +54,6 @@ export const AuthPage = () => {
       } else {
         await login(email, password);
       }
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleOneClickDemo = async () => {
-    setEmail('student@example.com');
-    setPassword('student123');
-    setConfirmPassword('student123');
-    setFullName('Alex Rivera');
-    setIsRegister(false);
-    setError('');
-    setSubmitting(true);
-    try {
-      await login('student@example.com', 'student123');
     } catch (err) {
       setError(err.message);
     } finally {
@@ -318,19 +300,6 @@ export const AuthPage = () => {
             <ArrowRight size={16} />
           </button>
         </form>
-
-        {/* Demo Fast-Fill */}
-        <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid var(--border)', textAlign: 'center' }}>
-          <button
-            type="button"
-            onClick={handleOneClickDemo}
-            className="btn btn-ghost"
-            style={{ fontSize: '0.8rem', color: 'var(--primary)', fontWeight: 600, margin: '0 auto', gap: '6px' }}
-          >
-            <Sparkles size={15} color="var(--primary)" />
-            <span>One-Click Demo Login (student@example.com)</span>
-          </button>
-        </div>
       </div>
     </div>
   );
