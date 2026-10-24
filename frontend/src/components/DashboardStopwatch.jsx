@@ -1,50 +1,68 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, Pause, RotateCcw, Clock, Sparkles, Volume2, Maximize2 } from 'lucide-react';
-import confetti from 'canvas-confetti';
+import { Play, Pause, RotateCcw, Clock, Maximize2, Bell, BellOff, Check } from 'lucide-react';
 import { useAppSettings } from '../contexts/AppSettingsContext';
+import { startContinuousAlarm, stopContinuousAlarm } from '../utils/audioAlerts';
+import { triggerCelebration } from '../utils/confettiHelper';
 
 export const DashboardStopwatch = ({ onOpenTimer, activeTask }) => {
   const { settings } = useAppSettings();
-  const [mode, setMode] = useState('25'); // '25', '50', '15', 'stopwatch'
+  const [mode, setMode] = useState('25'); // '25', '45', '60', '120', 'custom', 'stopwatch'
   const [totalSeconds, setTotalSeconds] = useState(25 * 60);
   const [secondsLeft, setSecondsLeft] = useState(25 * 60);
   const [isRunning, setIsRunning] = useState(false);
   const [stopwatchElapsed, setStopwatchElapsed] = useState(0);
 
+  // Custom hours & minutes inputs
+  const [isCustomActive, setIsCustomActive] = useState(false);
+  const [customHours, setCustomHours] = useState(0);
+  const [customMinutes, setCustomMinutes] = useState(30);
+
+  // Persistent alarm state
+  const [isRinging, setIsRinging] = useState(false);
+
   const timerRef = useRef(null);
 
-  // Play synthetic tone when timer finishes
-  const playChime = () => {
-    if (!settings.soundEnabled) return;
-    try {
-      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      gain.gain.setValueAtTime((settings.soundVolume || 80) / 100 * 0.35, audioCtx.currentTime);
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(587.33, audioCtx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.1);
-      gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.2);
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-      osc.start();
-      osc.stop(audioCtx.currentTime + 1.2);
-    } catch {}
-  };
+  // Clean up alarm on unmount
+  useEffect(() => {
+    return () => {
+      stopContinuousAlarm();
+    };
+  }, []);
 
-  // Change preset
-  const handleSelectMode = (newMode) => {
+  // Handle Preset selection
+  const handleSelectMode = (newMode, minutes) => {
+    stopAlarm();
     setIsRunning(false);
+    setIsCustomActive(false);
     setMode(newMode);
+
     if (newMode === 'stopwatch') {
       setStopwatchElapsed(0);
     } else {
-      const mins = Number(newMode);
-      setTotalSeconds(mins * 60);
-      setSecondsLeft(mins * 60);
+      const secs = minutes * 60;
+      setTotalSeconds(secs);
+      setSecondsLeft(secs);
     }
   };
 
+  const handleApplyCustom = (e) => {
+    if (e) e.preventDefault();
+    const h = Math.max(0, parseInt(customHours, 10) || 0);
+    const m = Math.max(0, Math.min(59, parseInt(customMinutes, 10) || 0));
+    const totalMins = (h * 60) + m;
+
+    if (totalMins > 0) {
+      stopAlarm();
+      setIsRunning(false);
+      setMode('custom');
+      const secs = totalMins * 60;
+      setTotalSeconds(secs);
+      setSecondsLeft(secs);
+      setIsCustomActive(false);
+    }
+  };
+
+  // Timer tick
   useEffect(() => {
     if (isRunning) {
       timerRef.current = setInterval(() => {
@@ -55,10 +73,7 @@ export const DashboardStopwatch = ({ onOpenTimer, activeTask }) => {
             if (prev <= 1) {
               clearInterval(timerRef.current);
               setIsRunning(false);
-              playChime();
-              if (settings.confettiEnabled) {
-                confetti({ particleCount: 80, spread: 60, origin: { y: 0.7 } });
-              }
+              handleTimerComplete();
               return 0;
             }
             return prev - 1;
@@ -70,9 +85,27 @@ export const DashboardStopwatch = ({ onOpenTimer, activeTask }) => {
     }
 
     return () => clearInterval(timerRef.current);
-  }, [isRunning, mode, settings]);
+  }, [isRunning, mode]);
+
+  // When timer hits 0
+  const handleTimerComplete = () => {
+    setIsRinging(true);
+    triggerCelebration();
+
+    if (settings.soundEnabled) {
+      startContinuousAlarm(settings.timerSound, settings.soundVolume, () => {
+        setIsRinging(false);
+      });
+    }
+  };
+
+  const stopAlarm = () => {
+    stopContinuousAlarm();
+    setIsRinging(false);
+  };
 
   const handleReset = () => {
+    stopAlarm();
     setIsRunning(false);
     if (mode === 'stopwatch') {
       setStopwatchElapsed(0);
@@ -81,13 +114,19 @@ export const DashboardStopwatch = ({ onOpenTimer, activeTask }) => {
     }
   };
 
+  // Formatting with hours support: HH:MM:SS or MM:SS
   const formatTime = (secs) => {
-    const m = Math.floor(secs / 60);
-    const s = secs % 60;
-    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    const hours = Math.floor(secs / 3600);
+    const remainingSecs = secs % 3600;
+    const minutes = Math.floor(remainingSecs / 60);
+    const s = remainingSecs % 60;
+
+    if (hours > 0) {
+      return `${hours}:${minutes.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    }
+    return `${minutes.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
-  // Progress percentage for circular ring
   const progressPercent = mode === 'stopwatch' 
     ? Math.min(100, (stopwatchElapsed % 3600) / 36)
     : Math.max(0, Math.min(100, ((totalSeconds - secondsLeft) / totalSeconds) * 100));
@@ -136,10 +175,10 @@ export const DashboardStopwatch = ({ onOpenTimer, activeTask }) => {
           </div>
           <div>
             <h4 style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.2 }}>
-              Focus Stopwatch
+              Timer
             </h4>
             <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
-              {activeTask ? `Studying: ${activeTask.topic_title || activeTask.title}` : 'Paced study session'}
+              {activeTask ? (activeTask.topic_title || activeTask.title) : 'Focus Session'}
             </span>
           </div>
         </div>
@@ -148,26 +187,62 @@ export const DashboardStopwatch = ({ onOpenTimer, activeTask }) => {
           onClick={onOpenTimer}
           className="btn btn-ghost"
           style={{ padding: '6px', borderRadius: '8px', color: 'var(--text-muted)' }}
-          title="Open Fullscreen Pomodoro Timer"
+          title="Open Fullscreen Timer"
         >
           <Maximize2 size={15} />
         </button>
       </div>
 
-      {/* Center Stopwatch Dial */}
+      {/* Continuous Ringing Banner if Alarm is Active */}
+      {isRinging && (
+        <div style={{
+          margin: '8px 0',
+          padding: '10px 14px',
+          backgroundColor: '#ef4444',
+          color: '#ffffff',
+          borderRadius: '12px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          animation: 'pulse 1s infinite',
+          boxShadow: '0 4px 16px rgba(239, 68, 68, 0.4)',
+          position: 'relative',
+          zIndex: 2
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700, fontSize: '0.85rem' }}>
+            <Bell size={18} />
+            <span>Time's Up! Ringing...</span>
+          </div>
+          <button
+            onClick={stopAlarm}
+            className="btn"
+            style={{
+              padding: '4px 12px',
+              fontSize: '0.78rem',
+              backgroundColor: '#ffffff',
+              color: '#ef4444',
+              borderRadius: '8px',
+              fontWeight: 800
+            }}
+          >
+            Stop Alarm
+          </button>
+        </div>
+      )}
+
+      {/* Center Dial: JUST THE TIME */}
       <div style={{
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        margin: '16px 0',
+        margin: '14px 0',
         position: 'relative',
         zIndex: 1
       }}>
-        {/* Animated Circular Ring */}
         <div style={{
-          width: '180px',
-          height: '180px',
+          width: '185px',
+          height: '185px',
           borderRadius: '50%',
           background: `conic-gradient(var(--primary) ${progressPercent * 3.6}deg, var(--border) 0deg)`,
           padding: '10px',
@@ -189,7 +264,7 @@ export const DashboardStopwatch = ({ onOpenTimer, activeTask }) => {
             boxShadow: 'inset 0 2px 6px rgba(0,0,0,0.06)'
           }}>
             <span style={{
-              fontSize: '2.1rem',
+              fontSize: displayTime.length > 5 ? '1.85rem' : '2.4rem',
               fontWeight: 800,
               fontFamily: 'monospace',
               letterSpacing: '-0.03em',
@@ -198,27 +273,62 @@ export const DashboardStopwatch = ({ onOpenTimer, activeTask }) => {
             }}>
               {displayTime}
             </span>
-            <span style={{
-              fontSize: '0.68rem',
-              fontWeight: 700,
-              color: isRunning ? 'var(--primary)' : 'var(--text-muted)',
-              textTransform: 'uppercase',
-              letterSpacing: '0.06em',
-              marginTop: '6px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px'
-            }}>
-              {isRunning && <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: 'var(--primary)', animation: 'pulse 1.5s infinite' }} />}
-              {isRunning ? 'Active Sprint' : (secondsLeft === 0 ? 'Completed!' : 'Ready')}
-            </span>
           </div>
         </div>
       </div>
 
-      {/* Preset Mode Switchers */}
+      {/* Custom Timer Input Form (Hours & Minutes) */}
+      {isCustomActive && (
+        <form onSubmit={handleApplyCustom} style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '8px',
+          backgroundColor: 'var(--bg-card-subtle)',
+          padding: '8px 12px',
+          borderRadius: '10px',
+          marginBottom: '10px',
+          position: 'relative',
+          zIndex: 1
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <input
+              type="number"
+              min="0"
+              max="12"
+              value={customHours}
+              onChange={(e) => setCustomHours(e.target.value)}
+              className="input-field"
+              style={{ width: '48px', padding: '4px 6px', textAlign: 'center', fontSize: '0.85rem' }}
+              placeholder="0"
+            />
+            <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>h</span>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <input
+              type="number"
+              min="0"
+              max="59"
+              value={customMinutes}
+              onChange={(e) => setCustomMinutes(e.target.value)}
+              className="input-field"
+              style={{ width: '48px', padding: '4px 6px', textAlign: 'center', fontSize: '0.85rem' }}
+              placeholder="30"
+            />
+            <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>m</span>
+          </div>
+
+          <button type="submit" className="btn btn-primary" style={{ padding: '5px 12px', fontSize: '0.76rem' }}>
+            Set
+          </button>
+        </form>
+      )}
+
+      {/* Preset Mode Switchers (with Hour options & Custom) */}
       <div style={{
         display: 'flex',
+        flexWrap: 'wrap',
         justifyContent: 'center',
         gap: '6px',
         position: 'relative',
@@ -226,23 +336,23 @@ export const DashboardStopwatch = ({ onOpenTimer, activeTask }) => {
         marginBottom: '12px'
       }}>
         {[
-          { id: '25', label: '25m Pomodoro' },
-          { id: '50', label: '50m Deep Work' },
-          { id: '15', label: '15m Review' },
-          { id: 'stopwatch', label: 'Count Up' }
+          { id: '25', label: '25m', mins: 25 },
+          { id: '45', label: '45m', mins: 45 },
+          { id: '60', label: '1 Hour', mins: 60 },
+          { id: '120', label: '2 Hours', mins: 120 },
         ].map((m) => {
-          const isSelected = mode === m.id;
+          const isSelected = mode === m.id && !isCustomActive;
           return (
             <button
               key={m.id}
-              onClick={() => handleSelectMode(m.id)}
+              onClick={() => handleSelectMode(m.id, m.mins)}
               style={{
                 border: 'none',
                 background: isSelected ? 'var(--primary)' : 'var(--bg-card-subtle)',
                 color: isSelected ? '#ffffff' : 'var(--text-secondary)',
-                fontSize: '0.72rem',
+                fontSize: '0.74rem',
                 fontWeight: isSelected ? 700 : 500,
-                padding: '4px 9px',
+                padding: '4px 10px',
                 borderRadius: '8px',
                 cursor: 'pointer',
                 transition: 'all 0.15s ease'
@@ -252,6 +362,42 @@ export const DashboardStopwatch = ({ onOpenTimer, activeTask }) => {
             </button>
           );
         })}
+
+        {/* Custom Timer Button */}
+        <button
+          onClick={() => setIsCustomActive(!isCustomActive)}
+          style={{
+            border: 'none',
+            background: isCustomActive || mode === 'custom' ? 'var(--primary)' : 'var(--bg-card-subtle)',
+            color: isCustomActive || mode === 'custom' ? '#ffffff' : 'var(--text-secondary)',
+            fontSize: '0.74rem',
+            fontWeight: isCustomActive || mode === 'custom' ? 700 : 500,
+            padding: '4px 10px',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            transition: 'all 0.15s ease'
+          }}
+        >
+          Custom
+        </button>
+
+        {/* Stopwatch / Count Up Button */}
+        <button
+          onClick={() => handleSelectMode('stopwatch', 0)}
+          style={{
+            border: 'none',
+            background: mode === 'stopwatch' && !isCustomActive ? 'var(--primary)' : 'var(--bg-card-subtle)',
+            color: mode === 'stopwatch' && !isCustomActive ? '#ffffff' : 'var(--text-secondary)',
+            fontSize: '0.74rem',
+            fontWeight: mode === 'stopwatch' && !isCustomActive ? 700 : 500,
+            padding: '4px 10px',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            transition: 'all 0.15s ease'
+          }}
+        >
+          Count Up
+        </button>
       </div>
 
       {/* Action Controls: Start/Pause & Reset */}
@@ -264,7 +410,10 @@ export const DashboardStopwatch = ({ onOpenTimer, activeTask }) => {
         zIndex: 1
       }}>
         <button
-          onClick={() => setIsRunning(!isRunning)}
+          onClick={() => {
+            if (isRinging) stopAlarm();
+            setIsRunning(!isRunning);
+          }}
           className="btn btn-primary"
           style={{
             flex: 1,
@@ -276,7 +425,7 @@ export const DashboardStopwatch = ({ onOpenTimer, activeTask }) => {
           }}
         >
           {isRunning ? <Pause size={16} /> : <Play size={16} fill="currentColor" />}
-          <span>{isRunning ? 'Pause Sprint' : 'Start Focus Sprint'}</span>
+          <span>{isRunning ? 'Pause' : 'Start'}</span>
         </button>
 
         <button

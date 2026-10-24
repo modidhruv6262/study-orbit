@@ -194,7 +194,7 @@ export const CountdownCard = ({ exam, onSelectExam, onEdit, onToggleComplete, on
         </div>
 
         {/* Date & Meta */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '14px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', fontSize: '0.78rem', color: 'var(--text-secondary)', marginBottom: '8px' }}>
           <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
             <Calendar size={13} />
             {new Date(exam.exam_date + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
@@ -206,6 +206,92 @@ export const CountdownCard = ({ exam, onSelectExam, onEdit, onToggleComplete, on
             </span>
           )}
         </div>
+
+        {/* Detailed Subject Scope Breakdown (Scrollable if multiple) */}
+        {subjectsList.length > 0 && (
+          <div style={{
+            margin: '8px 0 14px 0',
+            backgroundColor: 'var(--bg-card-subtle)',
+            border: '1px solid var(--border)',
+            borderRadius: '12px',
+            padding: '10px 12px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '8px'
+          }}>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              fontSize: '0.7rem',
+              fontWeight: 800,
+              color: 'var(--text-muted)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.04em'
+            }}>
+              <span>Exam Scope Subjects ({subjectsList.length})</span>
+              <span style={{ fontSize: '0.68rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                Target Outline
+              </span>
+            </div>
+
+            {/* Scrollable list of subjects */}
+            <div style={{
+              maxHeight: '135px',
+              overflowY: 'auto',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '6px',
+              paddingRight: '4px'
+            }}>
+              {subjectsList.map((s) => (
+                <div
+                  key={s.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '6px 10px',
+                    backgroundColor: 'var(--bg-card)',
+                    borderRadius: '8px',
+                    border: '1px solid var(--border)',
+                    fontSize: '0.78rem'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                    <span style={{
+                      width: '8px',
+                      height: '8px',
+                      borderRadius: '50%',
+                      backgroundColor: s.color || 'var(--primary)',
+                      flexShrink: 0
+                    }} />
+                    <span style={{ fontWeight: 700, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {s.name}
+                    </span>
+                    {s.code && (
+                      <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', flexShrink: 0 }}>
+                        ({s.code})
+                      </span>
+                    )}
+                  </div>
+
+                  <span style={{
+                    fontSize: '0.72rem',
+                    color: 'var(--text-secondary)',
+                    fontWeight: 600,
+                    flexShrink: 0,
+                    marginLeft: '8px'
+                  }}>
+                    {s.target_chapters && s.target_chapters.length > 0
+                      ? `${s.target_chapters.length} Ch. (Ch. ${s.target_chapters.join(', ')})`
+                      : 'All Syllabus'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Progress bar */}

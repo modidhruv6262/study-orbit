@@ -6,20 +6,58 @@ const DEFAULT_SETTINGS = {
   themeColor: 'indigo', // 'indigo', 'cyan', 'violet', 'emerald', 'rose'
   ambientGlow: true,
   soundEnabled: true,
-  soundVolume: 80,
-  timerSound: 'bell', // 'bell', 'digital', 'bowl'
+  soundVolume: 85,
+  timerSound: 'celestial_harp', // 'celestial_harp', 'zen_bowl', 'acoustic_bell', 'marimba_echo'
   confettiEnabled: true,
   reducedMotion: false,
-  keepAliveActive: true,
-  desktopNotifications: false,
 };
 
-const COLOR_PALETTES = {
-  indigo: { primary: '#4f46e5', primaryHover: '#4338ca', primaryLight: '#eef2ff', glow: 'rgba(79, 70, 229, 0.25)' },
-  cyan: { primary: '#0891b2', primaryHover: '#0e7490', primaryLight: '#ecfeff', glow: 'rgba(8, 145, 178, 0.25)' },
-  violet: { primary: '#7c3aed', primaryHover: '#6d28d9', primaryLight: '#f5f3ff', glow: 'rgba(124, 58, 237, 0.25)' },
-  emerald: { primary: '#059669', primaryHover: '#047857', primaryLight: '#ecfdf5', glow: 'rgba(5, 150, 105, 0.25)' },
-  rose: { primary: '#e11d48', primaryHover: '#be123c', primaryLight: '#fff1f2', glow: 'rgba(225, 29, 72, 0.25)' },
+export const COLOR_PALETTES = {
+  indigo: {
+    id: 'indigo',
+    name: 'Cosmic Indigo',
+    primary: '#4f46e5',
+    primaryHover: '#4338ca',
+    primaryLight: 'rgba(79, 70, 229, 0.15)',
+    primaryDark: '#3730a3',
+    glow: 'rgba(79, 70, 229, 0.35)'
+  },
+  cyan: {
+    id: 'cyan',
+    name: 'Cyber Cyan',
+    primary: '#06b6d4',
+    primaryHover: '#0891b2',
+    primaryLight: 'rgba(6, 182, 212, 0.16)',
+    primaryDark: '#0e7490',
+    glow: 'rgba(6, 182, 212, 0.4)'
+  },
+  violet: {
+    id: 'violet',
+    name: 'Deep Violet',
+    primary: '#8b5cf6',
+    primaryHover: '#7c3aed',
+    primaryLight: 'rgba(139, 92, 246, 0.16)',
+    primaryDark: '#6d28d9',
+    glow: 'rgba(139, 92, 246, 0.4)'
+  },
+  emerald: {
+    id: 'emerald',
+    name: 'Aurora Emerald',
+    primary: '#10b981',
+    primaryHover: '#059669',
+    primaryLight: 'rgba(16, 185, 129, 0.16)',
+    primaryDark: '#047857',
+    glow: 'rgba(16, 185, 129, 0.4)'
+  },
+  rose: {
+    id: 'rose',
+    name: 'Solar Rose',
+    primary: '#f43f5e',
+    primaryHover: '#e11d48',
+    primaryLight: 'rgba(244, 63, 94, 0.16)',
+    primaryDark: '#be123c',
+    glow: 'rgba(244, 63, 94, 0.4)'
+  },
 };
 
 const AppSettingsContext = createContext(null);
@@ -28,19 +66,11 @@ export const AppSettingsProvider = ({ children }) => {
   const [settings, setSettings] = useState(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
-      return stored ? { ...DEFAULT_SETTINGS, ...jsonParse(stored) } : DEFAULT_SETTINGS;
+      return stored ? { ...DEFAULT_SETTINGS, ...JSON.parse(stored) } : DEFAULT_SETTINGS;
     } catch {
       return DEFAULT_SETTINGS;
     }
   });
-
-  function jsonParse(str) {
-    try {
-      return JSON.parse(str);
-    } catch {
-      return {};
-    }
-  }
 
   // Apply CSS color overrides and effects dynamically
   useEffect(() => {
@@ -53,10 +83,11 @@ export const AppSettingsProvider = ({ children }) => {
     const root = document.documentElement;
     const palette = COLOR_PALETTES[settings.themeColor] || COLOR_PALETTES.indigo;
 
-    // Apply primary color accent if not in default dark mode override
+    // Apply primary brand colors across document
     root.style.setProperty('--primary', palette.primary);
     root.style.setProperty('--primary-hover', palette.primaryHover);
     root.style.setProperty('--primary-light', palette.primaryLight);
+    root.style.setProperty('--primary-dark', palette.primaryDark);
     root.style.setProperty('--primary-glow', palette.glow);
 
     if (settings.ambientGlow) {

@@ -42,7 +42,6 @@ export const Navbar = ({ activeTab, setActiveTab, onOpenTimer, onOpenChat, strea
     { id: 'schedule', label: 'Timetable', icon: Calendar },
     { id: 'exams', label: 'Exams', icon: GraduationCap },
     { id: 'preferences', label: 'Study Plan', icon: SlidersHorizontal },
-    { id: 'settings', label: 'Settings', icon: Settings },
   ];
 
   const getInitials = (name) => {

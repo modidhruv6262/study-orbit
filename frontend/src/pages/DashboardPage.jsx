@@ -18,7 +18,7 @@ import {
   Target,
   Zap
 } from 'lucide-react';
-import confetti from 'canvas-confetti';
+import { triggerCelebration } from '../utils/confettiHelper';
 import { apiClient } from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
 import { CountdownCard } from '../components/CountdownCard';
@@ -65,13 +65,7 @@ export const DashboardPage = ({ setActiveTab, onStartTaskTimer }) => {
       await apiClient.patch(`/schedules/tasks/${task.id}`, { status: newStatus });
 
       if (newStatus === 'completed') {
-        try {
-          confetti({
-            particleCount: 50,
-            spread: 60,
-            origin: { y: 0.7 }
-          });
-        } catch (e) {}
+        triggerCelebration();
       }
       const updatedOverview = await apiClient.get('/dashboard/overview');
       setOverview(updatedOverview);

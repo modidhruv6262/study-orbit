@@ -19,7 +19,7 @@ import {
   Sun,
   Moon
 } from 'lucide-react';
-import confetti from 'canvas-confetti';
+import { triggerCelebration } from '../utils/confettiHelper';
 import { apiClient } from '../api/client';
 import { useTheme } from '../contexts/ThemeContext';
 import SectionHeader from '../components/SectionHeader';
@@ -184,11 +184,7 @@ export const OnboardingPage = ({ onComplete }) => {
       // 3. Mark Onboarding as Completed (Correct relative endpoint)
       await apiClient.post('/profile/complete-onboarding', {});
 
-      confetti({
-        particleCount: 100,
-        spread: 80,
-        origin: { y: 0.5 }
-      });
+      triggerCelebration();
 
       onComplete();
     } catch (err) {

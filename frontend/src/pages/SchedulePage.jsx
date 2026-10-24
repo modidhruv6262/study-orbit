@@ -13,7 +13,7 @@ import {
   Filter,
   CheckCircle2
 } from 'lucide-react';
-import confetti from 'canvas-confetti';
+import { triggerCelebration } from '../utils/confettiHelper';
 import { apiClient } from '../api/client';
 import SectionHeader from '../components/SectionHeader';
 
@@ -48,11 +48,7 @@ export const SchedulePage = ({ onStartTaskTimer }) => {
         title: 'Unified Master Study Plan'
       });
       setSchedule(newPlan);
-      confetti({
-        particleCount: 70,
-        spread: 80,
-        origin: { y: 0.6 }
-      });
+      triggerCelebration();
     } catch (err) {
       alert(`Schedule generation failed: ${err.message}`);
     } finally {
@@ -92,11 +88,7 @@ export const SchedulePage = ({ onStartTaskTimer }) => {
       await apiClient.patch(`/schedules/tasks/${task.id}`, { status: newStatus });
 
       if (newStatus === 'completed') {
-        confetti({
-          particleCount: 40,
-          spread: 50,
-          origin: { y: 0.7 }
-        });
+        triggerCelebration();
       }
     } catch (err) {
       console.error('Failed to update task:', err);

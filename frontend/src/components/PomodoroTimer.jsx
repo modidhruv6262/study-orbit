@@ -1,103 +1,63 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, Pause, RotateCcw, X, Sparkles, Volume2, VolumeX, Target, Sliders, Check } from 'lucide-react';
-import confetti from 'canvas-confetti';
+import { Play, Pause, RotateCcw, X, Volume2, VolumeX, Target, Sliders, Bell } from 'lucide-react';
+import { useAppSettings } from '../contexts/AppSettingsContext';
+import { startContinuousAlarm, stopContinuousAlarm, playSingleChime } from '../utils/audioAlerts';
+import { triggerCelebration } from '../utils/confettiHelper';
 
 export const PomodoroTimer = ({ isOpen, onClose, activeTask }) => {
+  const { settings } = useAppSettings();
   const defaultMin = activeTask?.estimated_minutes ? Number(activeTask.estimated_minutes) : 25;
-  const [mode, setMode] = useState(defaultMin);
+  const [totalSeconds, setTotalSeconds] = useState(defaultMin * 60);
   const [secondsLeft, setSecondsLeft] = useState(defaultMin * 60);
   const [isActive, setIsActive] = useState(false);
   const [isCustomOpen, setIsCustomOpen] = useState(false);
-  const [customInput, setCustomInput] = useState('');
-  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [customHours, setCustomHours] = useState(0);
+  const [customMinutes, setCustomMinutes] = useState(25);
+  const [isRinging, setIsRinging] = useState(false);
 
-  // Play a harmonic, soothing completion chime using Web Audio API
-  const playChimeSound = () => {
-    try {
-      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-      if (!AudioContextClass) return;
-      const ctx = new AudioContextClass();
-      if (ctx.state === 'suspended') {
-        ctx.resume();
-      }
-
-      // Melodic celebration chime chord: D5 -> F#5 -> A5 -> D6
-      const chord = [
-        { freq: 587.33, delay: 0.0, duration: 1.2, gainVal: 0.28 },
-        { freq: 739.99, delay: 0.16, duration: 1.3, gainVal: 0.26 },
-        { freq: 880.00, delay: 0.32, duration: 1.4, gainVal: 0.26 },
-        { freq: 1174.66, delay: 0.48, duration: 2.2, gainVal: 0.32 }
-      ];
-
-      chord.forEach(({ freq, delay, duration, gainVal }) => {
-        // Fundamental tone
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(freq, ctx.currentTime + delay);
-
-        // Harmonic overtone for natural bell acoustic warmth
-        const overtone = ctx.createOscillator();
-        const overtoneGain = ctx.createGain();
-        overtone.type = 'sine';
-        overtone.frequency.setValueAtTime(freq * 2, ctx.currentTime + delay);
-
-        // Musical envelope: fast soft attack, smooth exponential decay
-        const startTime = ctx.currentTime + delay;
-        gain.gain.setValueAtTime(0.0001, startTime);
-        gain.gain.exponentialRampToValueAtTime(gainVal, startTime + 0.035);
-        gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
-
-        overtoneGain.gain.setValueAtTime(0.0001, startTime);
-        overtoneGain.gain.exponentialRampToValueAtTime(gainVal * 0.3, startTime + 0.03);
-        overtoneGain.gain.exponentialRampToValueAtTime(0.0001, startTime + (duration * 0.7));
-
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-
-        overtone.connect(overtoneGain);
-        overtoneGain.connect(ctx.destination);
-
-        osc.start(startTime);
-        osc.stop(startTime + duration);
-
-        overtone.start(startTime);
-        overtone.stop(startTime + duration);
-      });
-    } catch (err) {
-      console.warn('Audio playback error:', err);
-    }
-  };
-
-  // When activeTask or isOpen changes, sync timer to the target study duration
+  // When activeTask or isOpen changes, sync timer
   useEffect(() => {
     if (isOpen) {
+      stopAlarm();
       const minutes = activeTask?.estimated_minutes ? Number(activeTask.estimated_minutes) : 25;
-      setMode(minutes);
-      setSecondsLeft(minutes * 60);
+      const secs = minutes * 60;
+      setTotalSeconds(secs);
+      setSecondsLeft(secs);
       setIsActive(false);
       setIsCustomOpen(false);
+    } else {
+      stopAlarm();
     }
   }, [activeTask, isOpen]);
 
+  useEffect(() => {
+    return () => {
+      stopContinuousAlarm();
+    };
+  }, []);
+
   // When user clicks a mode button
-  const handleModeChange = (newMode) => {
-    const val = Math.max(1, Math.min(360, Number(newMode) || 25));
-    setMode(val);
-    setSecondsLeft(val * 60);
+  const handleModeChange = (mins) => {
+    stopAlarm();
+    const totalSecs = Math.max(60, mins * 60);
+    setTotalSeconds(totalSecs);
+    setSecondsLeft(totalSecs);
     setIsActive(false);
   };
 
   const handleApplyCustom = (e) => {
     if (e) e.preventDefault();
-    const val = parseInt(customInput, 10);
-    if (!isNaN(val) && val > 0 && val <= 360) {
-      handleModeChange(val);
+    const h = Math.max(0, parseInt(customHours, 10) || 0);
+    const m = Math.max(0, Math.min(59, parseInt(customMinutes, 10) || 0));
+    const totalMins = (h * 60) + m;
+
+    if (totalMins > 0) {
+      handleModeChange(totalMins);
       setIsCustomOpen(false);
-      setCustomInput('');
     }
   };
 
+  // Timer Tick
   useEffect(() => {
     let interval = null;
     if (isActive && secondsLeft > 0) {
@@ -106,53 +66,49 @@ export const PomodoroTimer = ({ isOpen, onClose, activeTask }) => {
       }, 1000);
     } else if (isActive && secondsLeft === 0) {
       setIsActive(false);
-      try {
-        confetti({
-          particleCount: 90,
-          spread: 75,
-          origin: { y: 0.6 }
-        });
-      } catch (e) {}
+      setIsRinging(true);
+      triggerCelebration();
 
-      if (soundEnabled) {
-        playChimeSound();
+      if (settings.soundEnabled) {
+        startContinuousAlarm(settings.timerSound, settings.soundVolume, () => {
+          setIsRinging(false);
+        });
       }
     }
     return () => clearInterval(interval);
-  }, [isActive, secondsLeft, soundEnabled]);
+  }, [isActive, secondsLeft, settings]);
+
+  const stopAlarm = () => {
+    stopContinuousAlarm();
+    setIsRinging(false);
+  };
 
   if (!isOpen) return null;
 
-  const minutes = Math.floor(secondsLeft / 60);
-  const seconds = secondsLeft % 60;
-  const timeFormatted = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-  const totalSeconds = mode * 60;
+  // Format with hours support
+  const formatTime = (secs) => {
+    const hours = Math.floor(secs / 3600);
+    const remainingSecs = secs % 3600;
+    const minutes = Math.floor(remainingSecs / 60);
+    const s = remainingSecs % 60;
+
+    if (hours > 0) {
+      return `${hours}:${minutes.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    }
+    return `${minutes.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
+
   const progressPercent = totalSeconds > 0 ? ((totalSeconds - secondsLeft) / totalSeconds) * 100 : 0;
-
-  const taskMinutes = activeTask?.estimated_minutes ? Number(activeTask.estimated_minutes) : null;
-
-  // Build mode pills
-  const modeOptions = [];
-  if (taskMinutes && taskMinutes !== 25 && taskMinutes !== 50) {
-    modeOptions.push({ label: `${taskMinutes}m Target`, val: taskMinutes, isTarget: true });
-  }
-  modeOptions.push(
-    { label: taskMinutes === 25 ? '25m Target' : '25m Sprint', val: 25 },
-    { label: taskMinutes === 50 ? '50m Target' : '50m Deep', val: 50 },
-    { label: '5m Break', val: 5 }
-  );
-
-  // If current mode is not in presets, show as custom
-  const isPreset = modeOptions.some(m => m.val === mode);
-  if (!isPreset) {
-    modeOptions.push({ label: `${mode}m Custom`, val: mode, isCustom: true });
-  }
+  const timeFormatted = formatTime(secondsLeft);
 
   return (
     <div className="modal-overlay">
       <div className="modal-content animate-fade-in" style={{ maxWidth: '440px', textAlign: 'center', position: 'relative' }}>
         <button
-          onClick={onClose}
+          onClick={() => {
+            stopAlarm();
+            onClose();
+          }}
           style={{
             position: 'absolute',
             top: '16px',
@@ -162,13 +118,13 @@ export const PomodoroTimer = ({ isOpen, onClose, activeTask }) => {
             cursor: 'pointer',
             color: 'var(--text-muted)'
           }}
-          aria-label="Close Focus Timer"
+          aria-label="Close Timer"
         >
           <X size={20} />
         </button>
 
         <h3 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '6px', color: 'var(--text-primary)' }}>
-          Focus Study Sprint
+          Timer
         </h3>
 
         {activeTask ? (
@@ -190,42 +146,85 @@ export const PomodoroTimer = ({ isOpen, onClose, activeTask }) => {
                 {activeTask.chapter_title}
               </div>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
-                {activeTask.topic_title} • {activeTask.estimated_minutes} mins scheduled
+                {activeTask.topic_title}
               </div>
             </div>
           </div>
         ) : (
           <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>
-            Choose your focus duration or set a custom timer
+            Choose a duration or set custom hours & minutes
           </p>
         )}
 
-        {/* Mode selector */}
-        <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: '8px', marginBottom: '16px' }}>
-          {modeOptions.map((m) => (
+        {/* Ringing Alert Banner */}
+        {isRinging && (
+          <div style={{
+            margin: '0 0 16px 0',
+            padding: '10px 14px',
+            backgroundColor: '#ef4444',
+            color: '#ffffff',
+            borderRadius: '12px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            animation: 'pulse 1s infinite',
+            boxShadow: '0 4px 16px rgba(239, 68, 68, 0.4)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700, fontSize: '0.85rem' }}>
+              <Bell size={18} />
+              <span>Time's Up! Ringing...</span>
+            </div>
             <button
-              key={m.val}
-              onClick={() => {
-                handleModeChange(m.val);
-                setIsCustomOpen(false);
-              }}
+              onClick={stopAlarm}
+              className="btn"
               style={{
-                padding: '6px 14px',
+                padding: '4px 12px',
+                fontSize: '0.78rem',
+                backgroundColor: '#ffffff',
+                color: '#ef4444',
                 borderRadius: '8px',
-                border: '1px solid',
-                borderColor: mode === m.val ? 'var(--primary)' : 'var(--border)',
-                backgroundColor: mode === m.val ? 'var(--primary-light)' : 'var(--bg-card)',
-                color: mode === m.val ? 'var(--primary)' : 'var(--text-secondary)',
-                fontWeight: mode === m.val ? 700 : 600,
-                fontSize: '0.8rem',
-                cursor: 'pointer',
-                boxShadow: mode === m.val ? '0 0 10px var(--primary-glow)' : 'none',
-                transition: 'all 0.15s ease'
+                fontWeight: 800
               }}
             >
-              {m.label}
+              Stop Alarm
             </button>
-          ))}
+          </div>
+        )}
+
+        {/* Mode selector with Hour options */}
+        <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: '8px', marginBottom: '16px' }}>
+          {[
+            { label: '25m', mins: 25 },
+            { label: '45m', mins: 45 },
+            { label: '1 Hour', mins: 60 },
+            { label: '2 Hours', mins: 120 },
+          ].map((m) => {
+            const isSelected = totalSeconds === m.mins * 60 && !isCustomOpen;
+            return (
+              <button
+                key={m.mins}
+                onClick={() => {
+                  handleModeChange(m.mins);
+                  setIsCustomOpen(false);
+                }}
+                style={{
+                  padding: '6px 14px',
+                  borderRadius: '8px',
+                  border: '1px solid',
+                  borderColor: isSelected ? 'var(--primary)' : 'var(--border)',
+                  backgroundColor: isSelected ? 'var(--primary-light)' : 'var(--bg-card)',
+                  color: isSelected ? 'var(--primary)' : 'var(--text-secondary)',
+                  fontWeight: isSelected ? 700 : 600,
+                  fontSize: '0.8rem',
+                  cursor: 'pointer',
+                  boxShadow: isSelected ? '0 0 10px var(--primary-glow)' : 'none',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                {m.label}
+              </button>
+            );
+          })}
           
           <button
             onClick={() => setIsCustomOpen(!isCustomOpen)}
@@ -252,7 +251,7 @@ export const PomodoroTimer = ({ isOpen, onClose, activeTask }) => {
           </button>
         </div>
 
-        {/* Custom Timer Input Drawer */}
+        {/* Custom Timer Input Form (Hours & Minutes) */}
         {isCustomOpen && (
           <form 
             onSubmit={handleApplyCustom}
@@ -262,58 +261,52 @@ export const PomodoroTimer = ({ isOpen, onClose, activeTask }) => {
               borderRadius: '12px',
               backgroundColor: 'var(--bg-card-subtle)',
               border: '1px solid var(--border)',
-              boxShadow: '0 4px 16px -2px var(--primary-glow)'
+              boxShadow: '0 4px 16px -2px var(--primary-glow)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '12px'
             }}
           >
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
               <input
                 type="number"
-                min="1"
-                max="360"
-                placeholder="Minutes (1–360)"
-                value={customInput}
-                onChange={(e) => setCustomInput(e.target.value)}
-                autoFocus
+                min="0"
+                max="12"
+                value={customHours}
+                onChange={(e) => setCustomHours(e.target.value)}
                 className="input-field"
-                style={{ padding: '8px 12px', minHeight: '38px', fontSize: '0.85rem' }}
+                style={{ width: '54px', padding: '6px 8px', textAlign: 'center', fontSize: '0.9rem' }}
+                placeholder="0"
               />
-              <button
-                type="submit"
-                className="btn btn-primary"
-                style={{ padding: '0 16px', minHeight: '38px', fontSize: '0.82rem', flexShrink: 0 }}
-              >
-                Set Time
-              </button>
+              <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Hours</span>
             </div>
-            {/* Quick quick preset pills */}
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '6px', marginTop: '10px' }}>
-              {[15, 30, 45, 60, 90, 120].map((mins) => (
-                <button
-                  key={mins}
-                  type="button"
-                  onClick={() => {
-                    handleModeChange(mins);
-                    setIsCustomOpen(false);
-                  }}
-                  style={{
-                    padding: '3px 8px',
-                    fontSize: '0.72rem',
-                    fontWeight: 600,
-                    borderRadius: '6px',
-                    border: '1px solid var(--border)',
-                    backgroundColor: 'var(--bg-card)',
-                    color: 'var(--text-secondary)',
-                    cursor: 'pointer'
-                  }}
-                >
-                  {mins}m
-                </button>
-              ))}
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <input
+                type="number"
+                min="0"
+                max="59"
+                value={customMinutes}
+                onChange={(e) => setCustomMinutes(e.target.value)}
+                className="input-field"
+                style={{ width: '54px', padding: '6px 8px', textAlign: 'center', fontSize: '0.9rem' }}
+                placeholder="25"
+              />
+              <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Mins</span>
             </div>
+
+            <button
+              type="submit"
+              className="btn btn-primary"
+              style={{ padding: '6px 16px', fontSize: '0.82rem' }}
+            >
+              Set
+            </button>
           </form>
         )}
 
-        {/* Big Timer Display with Ambient Radial Backlight */}
+        {/* Big Timer Display */}
         <div style={{
           position: 'relative',
           width: '210px',
@@ -339,11 +332,13 @@ export const PomodoroTimer = ({ isOpen, onClose, activeTask }) => {
             justifyContent: 'center',
             boxShadow: 'inset 0 2px 6px rgba(0,0,0,0.08)'
           }}>
-            <span style={{ fontSize: '2.8rem', fontWeight: 800, fontFamily: 'monospace', color: 'var(--text-primary)' }}>
+            <span style={{
+              fontSize: timeFormatted.length > 5 ? '2.2rem' : '2.8rem',
+              fontWeight: 800,
+              fontFamily: 'monospace',
+              color: 'var(--text-primary)'
+            }}>
               {timeFormatted}
-            </span>
-            <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              {isActive ? 'Session Active' : secondsLeft === 0 ? 'Goal Reached!' : 'Ready'}
             </span>
           </div>
         </div>
@@ -351,17 +346,21 @@ export const PomodoroTimer = ({ isOpen, onClose, activeTask }) => {
         {/* Controls */}
         <div style={{ display: 'flex', justifyContent: 'center', gap: '12px' }}>
           <button
-            onClick={() => setIsActive(!isActive)}
+            onClick={() => {
+              if (isRinging) stopAlarm();
+              setIsActive(!isActive);
+            }}
             className="btn btn-primary"
             style={{ width: '135px', padding: '10px 16px', fontSize: '0.92rem' }}
           >
             {isActive ? <Pause size={18} /> : <Play size={18} />}
-            <span>{isActive ? 'Pause' : 'Start Focus'}</span>
+            <span>{isActive ? 'Pause' : 'Start'}</span>
           </button>
           <button
             onClick={() => {
+              stopAlarm();
               setIsActive(false);
-              setSecondsLeft(mode * 60);
+              setSecondsLeft(totalSeconds);
             }}
             className="btn btn-secondary"
             style={{ padding: '10px 16px' }}
@@ -369,50 +368,6 @@ export const PomodoroTimer = ({ isOpen, onClose, activeTask }) => {
           >
             <RotateCcw size={18} />
           </button>
-        </div>
-
-        {/* Completion Chime Sound Settings */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '16px' }}>
-          <button
-            type="button"
-            onClick={() => setSoundEnabled(!soundEnabled)}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '4px 10px',
-              fontSize: '0.74rem',
-              fontWeight: 600,
-              borderRadius: '20px',
-              border: '1px solid var(--border)',
-              backgroundColor: soundEnabled ? 'var(--primary-light)' : 'var(--bg-card-subtle)',
-              color: soundEnabled ? 'var(--primary)' : 'var(--text-muted)',
-              cursor: 'pointer',
-              transition: 'all 0.15s ease'
-            }}
-            title="Toggle Sound Alert on Completion"
-          >
-            {soundEnabled ? <Volume2 size={13} /> : <VolumeX size={13} />}
-            <span>Chime {soundEnabled ? 'Enabled' : 'Muted'}</span>
-          </button>
-
-          {soundEnabled && (
-            <button
-              type="button"
-              onClick={playChimeSound}
-              style={{
-                fontSize: '0.72rem',
-                color: 'var(--text-secondary)',
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                textDecoration: 'underline'
-              }}
-              title="Preview completion sound"
-            >
-              Test Chime
-            </button>
-          )}
         </div>
       </div>
     </div>
