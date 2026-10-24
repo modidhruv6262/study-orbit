@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { 
   GraduationCap, 
   ArrowRight, 
+  ArrowLeft,
   BookOpen, 
   Clock, 
   ShieldCheck, 
@@ -14,9 +15,9 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { Logo } from '../components/Logo';
 
-export const AuthPage = () => {
+export const AuthPage = ({ initialRegister = false, onBackToLanding }) => {
   const { theme, toggleTheme } = useTheme();
-  const [isRegister, setIsRegister] = useState(false);
+  const [isRegister, setIsRegister] = useState(initialRegister);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -72,6 +73,27 @@ export const AuthPage = () => {
       backgroundColor: 'var(--bg-main)',
       position: 'relative'
     }}>
+      {/* Top Left Back to Landing Link */}
+      {onBackToLanding && (
+        <button
+          onClick={onBackToLanding}
+          className="btn btn-ghost"
+          style={{
+            position: 'absolute',
+            top: '20px',
+            left: '20px',
+            padding: '8px 14px',
+            borderRadius: '20px',
+            fontSize: '0.82rem',
+            gap: '6px'
+          }}
+          title="Back to Landing Page"
+        >
+          <ArrowLeft size={16} />
+          <span>Back to Home</span>
+        </button>
+      )}
+
       {/* Top Corner Theme Switcher */}
       <button
         onClick={toggleTheme}

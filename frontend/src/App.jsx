@@ -8,6 +8,7 @@ import { Logo } from './components/Logo';
 import { PomodoroTimer } from './components/PomodoroTimer';
 import { ChatDrawer } from './components/ChatDrawer';
 import { AuthPage } from './pages/AuthPage';
+import { LandingPage } from './pages/LandingPage';
 import { OnboardingPage } from './pages/OnboardingPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { TextbooksPage } from './pages/TextbooksPage';
@@ -19,6 +20,7 @@ import { apiClient } from './api/client';
 function MainApp() {
   const { user, loading, logout, refreshUser } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [authMode, setAuthMode] = useState(null); // null: LandingPage, 'login': login, 'register': register
   const [isTimerOpen, setIsTimerOpen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [activeTaskForTimer, setActiveTaskForTimer] = useState(null);
@@ -104,7 +106,15 @@ function MainApp() {
   }
 
   if (!user) {
-    return <AuthPage />;
+    if (authMode) {
+      return (
+        <AuthPage
+          initialRegister={authMode === 'register'}
+          onBackToLanding={() => setAuthMode(null)}
+        />
+      );
+    }
+    return <LandingPage onOpenAuth={(mode) => setAuthMode(mode)} />;
   }
 
   // Check if student has finished onboarding
@@ -160,7 +170,10 @@ function MainApp() {
         onOpenChat={() => setIsChatOpen(true)}
         streak={streak}
         user={user}
-        onLogout={logout}
+        onLogout={() => {
+          logout();
+          setAuthMode(null);
+        }}
       />
 
       {/* Main Content Area */}
