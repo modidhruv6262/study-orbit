@@ -22,6 +22,7 @@ import confetti from 'canvas-confetti';
 import { apiClient } from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
 import { CountdownCard } from '../components/CountdownCard';
+import { DashboardStopwatch } from '../components/DashboardStopwatch';
 import SectionHeader from '../components/SectionHeader';
 
 export const DashboardPage = ({ setActiveTab, onStartTaskTimer }) => {
@@ -294,54 +295,80 @@ export const DashboardPage = ({ setActiveTab, onStartTaskTimer }) => {
         </div>
       </div>
 
-      {/* Upcoming Exams Countdown Section */}
-      <div>
-        <SectionHeader
-          title="Upcoming Exam Countdowns"
-          subtitle="Days left and topic progress across your courses"
-          icon={Target}
-          iconColor="#ef4444"
-          iconBg="rgba(239, 68, 68, 0.12)"
-          tag="Milestones"
-          action={
-            <button
-              onClick={() => setActiveTab('exams')}
-              className="btn btn-secondary"
-              style={{ fontSize: '0.8rem', padding: '6px 12px' }}
-            >
-              <PlusCircle size={15} />
-              <span>Manage Exams</span>
-            </button>
-          }
-        />
+      {/* Split Row on Desktop: Upcoming Exam Countdowns (Left 50%) & Big Focus Stopwatch (Right 50%) */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+        gap: '24px',
+        alignItems: 'stretch'
+      }}>
+        {/* Left Column: Upcoming Exams Countdown Section (Half width) */}
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <SectionHeader
+            title="Upcoming Exam Countdowns"
+            subtitle="Days left and topic progress across your courses"
+            icon={Target}
+            iconColor="#ef4444"
+            iconBg="rgba(239, 68, 68, 0.12)"
+            tag="Milestones"
+            action={
+              <button
+                onClick={() => setActiveTab('exams')}
+                className="btn btn-secondary"
+                style={{ fontSize: '0.8rem', padding: '6px 12px' }}
+              >
+                <PlusCircle size={15} />
+                <span>Manage Exams</span>
+              </button>
+            }
+          />
 
-        {exams.length === 0 ? (
-          <div className="glass-card" style={{ padding: '32px', textAlign: 'center' }}>
-            <p style={{ color: 'var(--text-secondary)', marginBottom: '12px' }}>
-              No exams scheduled yet! Add your exam date and syllabus to generate an adaptive schedule.
-            </p>
-            <button
-              onClick={() => setActiveTab('exams')}
-              className="btn btn-primary"
-            >
-              Add Your First Exam
-            </button>
-          </div>
-        ) : (
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-            gap: '16px'
-          }}>
-            {exams.map((exam) => (
-              <CountdownCard
-                key={exam.id}
-                exam={exam}
-                onSelectExam={() => setActiveTab('schedule')}
-              />
-            ))}
-          </div>
-        )}
+          {exams.length === 0 ? (
+            <div className="glass-card" style={{ padding: '32px', textAlign: 'center', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+              <p style={{ color: 'var(--text-secondary)', marginBottom: '12px', fontSize: '0.85rem' }}>
+                No exams scheduled yet! Add your exam date and syllabus to generate an adaptive schedule.
+              </p>
+              <button
+                onClick={() => setActiveTab('exams')}
+                className="btn btn-primary"
+                style={{ fontSize: '0.85rem' }}
+              >
+                Add Your First Exam
+              </button>
+            </div>
+          ) : (
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: exams.length > 1 ? 'repeat(auto-fit, minmax(260px, 1fr))' : '1fr',
+              gap: '16px',
+              flex: 1
+            }}>
+              {exams.map((exam) => (
+                <CountdownCard
+                  key={exam.id}
+                  exam={exam}
+                  onSelectExam={() => setActiveTab('schedule')}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Right Column: Big Interactive Focus Stopwatch */}
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <SectionHeader
+            title="Focus Study Sprint"
+            subtitle="Interactive countdown stopwatch with acoustic chimes"
+            icon={Clock}
+            iconColor="var(--primary)"
+            iconBg="var(--primary-light)"
+            tag="Focus Timer"
+          />
+          <DashboardStopwatch
+            onOpenTimer={() => onStartTaskTimer && onStartTaskTimer(null)}
+            activeTask={todayTasks.find((t) => t.status === 'in_progress') || todayTasks[0]}
+          />
+        </div>
       </div>
 
       {/* Today's Actionable Study Plan */}

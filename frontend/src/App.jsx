@@ -15,6 +15,8 @@ import { TextbooksPage } from './pages/TextbooksPage';
 import { SchedulePage } from './pages/SchedulePage';
 import { ExamsPage } from './pages/ExamsPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { AppSettingsPage } from './pages/AppSettingsPage';
+import { AppSettingsProvider } from './contexts/AppSettingsContext';
 import { apiClient } from './api/client';
 
 function MainApp() {
@@ -232,7 +234,8 @@ function MainApp() {
           <SchedulePage onStartTaskTimer={handleStartTaskTimer} />
         )}
         {activeTab === 'exams' && <ExamsPage />}
-        {activeTab === 'settings' && <SettingsPage />}
+        {activeTab === 'preferences' && <SettingsPage />}
+        {activeTab === 'settings' && <AppSettingsPage />}
       </main>
 
       {/* Passed Exam Prompt Modal */}
@@ -366,9 +369,11 @@ function MainApp() {
 export default function App() {
   return (
     <ThemeProvider>
-      <AuthProvider>
-        <MainApp />
-      </AuthProvider>
+      <AppSettingsProvider>
+        <AuthProvider>
+          <MainApp />
+        </AuthProvider>
+      </AppSettingsProvider>
     </ThemeProvider>
   );
 }

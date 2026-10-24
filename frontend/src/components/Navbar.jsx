@@ -13,7 +13,8 @@ import {
   Moon,
   Sparkles,
   ChevronDown,
-  User as UserIcon
+  User as UserIcon,
+  SlidersHorizontal
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { Logo } from './Logo';
@@ -40,6 +41,7 @@ export const Navbar = ({ activeTab, setActiveTab, onOpenTimer, onOpenChat, strea
     { id: 'textbooks', label: 'Courses', icon: BookOpen },
     { id: 'schedule', label: 'Timetable', icon: Calendar },
     { id: 'exams', label: 'Exams', icon: GraduationCap },
+    { id: 'preferences', label: 'Study Plan', icon: SlidersHorizontal },
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
 
@@ -209,7 +211,7 @@ export const Navbar = ({ activeTab, setActiveTab, onOpenTimer, onOpenChat, strea
 
                   <button
                     onClick={() => {
-                      setActiveTab('settings');
+                      setActiveTab('preferences');
                       setShowProfileMenu(false);
                     }}
                     style={{
@@ -229,8 +231,35 @@ export const Navbar = ({ activeTab, setActiveTab, onOpenTimer, onOpenChat, strea
                     onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-card-subtle)'}
                     onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                   >
+                    <SlidersHorizontal size={15} />
+                    <span>Study Hours & Plan</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setActiveTab('settings');
+                      setShowProfileMenu(false);
+                    }}
+                    style={{
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '8px 10px',
+                      borderRadius: '8px',
+                      border: 'none',
+                      background: 'none',
+                      color: 'var(--text-secondary)',
+                      fontSize: '0.82rem',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      marginTop: '2px'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-card-subtle)'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  >
                     <Settings size={15} />
-                    <span>Study Preferences & Profile</span>
+                    <span>App Settings</span>
                   </button>
 
                   <button
