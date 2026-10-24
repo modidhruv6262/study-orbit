@@ -51,3 +51,28 @@ def root():
 @app.get("/api/health")
 def health_check():
     return {"status": "healthy"}
+
+@app.get("/api/admin/seed-now")
+def trigger_seed():
+    try:
+        from app.seed import seed_dhruv_users
+        from app.database import SessionLocal
+        from app.models.user import User
+        from app.models.subject import Subject
+        seed_dhruv_users()
+        db = SessionLocal()
+        users = [u.email for u in db.query(User).all()]
+        subject_count = db.query(Subject).count()
+        db.close()
+        return {
+            "status": "success",
+            "users": users,
+            "subjects_count": subject_count
+        }
+    except Exception as e:
+        import traceback
+        return {
+            "status": "error",
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }
