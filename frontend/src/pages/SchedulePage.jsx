@@ -104,14 +104,14 @@ export const SchedulePage = ({ onStartTaskTimer }) => {
     }
   };
 
-  const handleExportPDF = () => {
+  const handleExportPDF = async () => {
     if (!schedule || !schedule.tasks || schedule.tasks.length === 0) {
       alert('No study schedule tasks available to export.');
       return;
     }
     try {
       setExportingPdf(true);
-      exportScheduleToPdf({
+      await exportScheduleToPdf({
         schedule,
         user,
         themeColor: settings?.themeColor || 'indigo'

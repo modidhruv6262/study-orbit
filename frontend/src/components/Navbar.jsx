@@ -144,14 +144,14 @@ export const Navbar = ({ activeTab, setActiveTab, onOpenTimer, onOpenChat, strea
             <button
               onClick={onOpenChat}
               className="btn btn-primary nav-action-btn nav-btn-icon-mobile"
-              title="Study AI Guide"
+              title="Study Chatbot"
               style={{
                 background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
                 boxShadow: '0 2px 10px rgba(79, 70, 229, 0.35)'
               }}
             >
               <Sparkles size={14} />
-              <span className="desktop-only">AI Guide</span>
+              <span className="desktop-only">Chatbot</span>
             </button>
 
             {/* Light / Dark Mode Toggle */}
