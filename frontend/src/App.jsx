@@ -30,6 +30,29 @@ function MainApp() {
   const [passedExamPrompt, setPassedExamPrompt] = useState(null);
   const [dismissedExamIds, setDismissedExamIds] = useState([]);
 
+  // Keep-alive heartbeat: ping backend every 4 minutes while app is open so it NEVER sleeps when user is AFK
+  useEffect(() => {
+    const apiBase = import.meta.env.VITE_API_BASE || '/api';
+    const pingBackend = () => {
+      fetch(`${apiBase}/health`).catch(() => {});
+    };
+
+    // Ping immediately when the user returns/tabs back to the app
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        pingBackend();
+      }
+    };
+
+    const interval = setInterval(pingBackend, 4 * 60 * 1000);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+
   // Fetch real study streak
   useEffect(() => {
     if (!user) return;
