@@ -19,8 +19,12 @@ export const apiClient = {
       headers['Content-Type'] = 'application/json';
     }
 
+    const isUpload = (options.body instanceof FormData) || endpoint.includes('/upload');
+    const defaultTimeout = isUpload ? 180000 : 60000; // 3 min for uploads/PDF extraction, 60s for standard (handles Render cold-starts)
+    const timeoutDuration = options.timeoutMs || defaultTimeout;
+
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000);
+    const timeoutId = setTimeout(() => controller.abort(), timeoutDuration);
 
     let response;
     try {
@@ -31,7 +35,10 @@ export const apiClient = {
       });
     } catch (err) {
       if (err.name === 'AbortError') {
-        throw new Error('Network request timed out. Please check your connection.');
+        if (isUpload) {
+          throw new Error('Upload & PDF processing took longer than expected. Please verify your connection or try a smaller PDF file.');
+        }
+        throw new Error('The server took longer than expected to respond. The backend may be waking up from sleep (~30-50s on free hosting). Please wait a moment and try again!');
       }
       throw err;
     } finally {
@@ -100,10 +107,11 @@ export const apiClient = {
     return this.request(endpoint, { method: 'DELETE' });
   },
 
-  upload(endpoint, formData) {
+  upload(endpoint, formData, options = {}) {
     return this.request(endpoint, {
       method: 'POST',
       body: formData,
+      ...options,
     });
   },
 };
