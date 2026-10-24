@@ -1,0 +1,69 @@
+import React from 'react';
+
+export const Logo = ({ size = 32, className = '', style = {} }) => {
+  return (
+    <svg 
+      xmlns="http://www.w3.org/2000/svg" 
+      viewBox="0 0 64 64" 
+      width={size} 
+      height={size} 
+      className={className}
+      style={{ display: 'inline-block', verticalAlign: 'middle', flexShrink: 0, ...style }}
+    >
+      <defs>
+        <linearGradient id="orbitBgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#4f46e5" />
+          <stop offset="50%" stopColor="#6366f1" />
+          <stop offset="100%" stopColor="#7c3aed" />
+        </linearGradient>
+        <linearGradient id="orbitGlowGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.2" />
+          <stop offset="50%" stopColor="#38bdf8" stopOpacity="0.95" />
+          <stop offset="100%" stopColor="#818cf8" stopOpacity="0.3" />
+        </linearGradient>
+        <filter id="planetGlowFilter" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="1.5" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+
+      {/* App Rounded Icon Container */}
+      <rect x="2" y="2" width="60" height="60" rx="16" fill="url(#orbitBgGradient)" />
+
+      {/* Outer Orbit Ring */}
+      <ellipse 
+        cx="32" 
+        cy="33" 
+        rx="25" 
+        ry="9" 
+        transform="rotate(-24 32 33)" 
+        stroke="url(#orbitGlowGradient)" 
+        strokeWidth="2.5" 
+        fill="none" 
+        strokeLinecap="round"
+      />
+
+      {/* Orbiting Celestial Stars / Planets */}
+      <circle cx="53" cy="24" r="3" fill="#38bdf8" filter="url(#planetGlowFilter)" />
+      <circle cx="11" cy="42" r="1.8" fill="#a5b4fc" opacity="0.8" />
+
+      {/* Graduation Cap Top (Diamond) */}
+      <polygon points="32,18 51,27 32,36 13,27" fill="#ffffff" />
+      
+      {/* Graduation Cap Under-Ledge for Depth */}
+      <polygon points="32,36 51,27 49,29 32,37.5 15,29 13,27" fill="#e0e7ff" opacity="0.85" />
+
+      {/* Cap Base (Skullcap) */}
+      <path d="M21,31.5 L21,40 C21,44.5 43,44.5 43,40 L43,31.5 C39.5,33.5 35.8,34.5 32,34.5 C28.2,34.5 24.5,33.5 21,31.5 Z" fill="#f8fafc" />
+
+      {/* Golden Tassel String & Knot */}
+      <path d="M44,28.5 L44,38.5 C44,40 46.5,40 46.5,38.5 L46.5,37" stroke="#fbbf24" strokeWidth="1.8" strokeLinecap="round" fill="none" />
+      <circle cx="44" cy="28.5" r="1.3" fill="#f59e0b" />
+    </svg>
+  );
+};
+
+export default Logo;

@@ -23,6 +23,7 @@ import confetti from 'canvas-confetti';
 import { apiClient } from '../api/client';
 import { useTheme } from '../contexts/ThemeContext';
 import SectionHeader from '../components/SectionHeader';
+import { Logo } from '../components/Logo';
 
 export const OnboardingPage = ({ onComplete }) => {
   const { theme, toggleTheme } = useTheme();
@@ -229,20 +230,7 @@ export const OnboardingPage = ({ onComplete }) => {
 
       {/* Brand Header */}
       <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-        <div style={{
-          width: '46px',
-          height: '46px',
-          borderRadius: '12px',
-          background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
-          color: 'white',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          margin: '0 auto 8px',
-          boxShadow: '0 4px 12px rgba(79, 70, 229, 0.35)'
-        }}>
-          <GraduationCap size={26} />
-        </div>
+        <Logo size={52} style={{ margin: '0 auto 10px', display: 'block', filter: 'drop-shadow(0 4px 14px rgba(79, 70, 229, 0.35))' }} />
         <h1 style={{ fontSize: '1.45rem', fontWeight: 800, color: 'var(--text-primary)' }}>
           Welcome to Study<span style={{ color: 'var(--primary)' }}>Orbit</span>
         </h1>

@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { Logo } from '../components/Logo';
 
 export const AuthPage = () => {
   const { theme, toggleTheme } = useTheme();
@@ -101,20 +102,7 @@ export const AuthPage = () => {
       }}>
         {/* Brand Header */}
         <div style={{ textAlign: 'center', marginBottom: '28px' }}>
-          <div style={{
-            width: '54px',
-            height: '54px',
-            borderRadius: '16px',
-            background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-            color: 'white',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            margin: '0 auto 12px',
-            boxShadow: '0 4px 18px var(--primary-glow)'
-          }}>
-            <GraduationCap size={30} />
-          </div>
+          <Logo size={58} style={{ margin: '0 auto 14px', display: 'block', filter: 'drop-shadow(0 6px 18px rgba(79, 70, 229, 0.4))' }} />
           <h2 style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
             Study<span style={{ color: 'var(--primary)' }}>Orbit</span>
           </h2>

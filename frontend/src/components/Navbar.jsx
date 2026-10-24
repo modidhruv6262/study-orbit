@@ -13,6 +13,7 @@ import {
   Moon
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
+import { Logo } from './Logo';
 
 export const Navbar = ({ activeTab, setActiveTab, onOpenTimer, onOpenChat, streak = 1, user, onLogout }) => {
   const { theme, toggleTheme } = useTheme();
@@ -44,18 +45,7 @@ export const Navbar = ({ activeTab, setActiveTab, onOpenTimer, onOpenChat, strea
             onClick={() => setActiveTab('dashboard')}
             style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', flexShrink: 0 }}
           >
-            <div style={{
-              background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
-              color: 'white',
-              padding: '6px',
-              borderRadius: '8px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 2px 6px rgba(79, 70, 229, 0.3)'
-            }}>
-              <GraduationCap size={18} />
-            </div>
+            <Logo size={32} style={{ borderRadius: '8px', filter: 'drop-shadow(0 2px 6px rgba(79, 70, 229, 0.35))' }} />
             <div>
               <span style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em', whiteSpace: 'nowrap' }}>
                 Study<span style={{ color: 'var(--primary)' }}>Orbit</span>

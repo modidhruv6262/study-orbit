@@ -4,6 +4,7 @@ import confetti from 'canvas-confetti';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { Navbar } from './components/Navbar';
+import { Logo } from './components/Logo';
 import { PomodoroTimer } from './components/PomodoroTimer';
 import { ChatDrawer } from './components/ChatDrawer';
 import { AuthPage } from './pages/AuthPage';
@@ -89,19 +90,7 @@ function MainApp() {
         fontFamily: 'sans-serif',
         gap: '14px'
       }}>
-        <div style={{
-          width: '52px',
-          height: '52px',
-          borderRadius: '16px',
-          background: 'var(--primary)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: 'white',
-          boxShadow: '0 4px 18px rgba(79, 70, 229, 0.3)'
-        }}>
-          <GraduationCap size={28} />
-        </div>
+        <Logo size={56} style={{ filter: 'drop-shadow(0 6px 18px rgba(79, 70, 229, 0.45))' }} />
         <div style={{ textAlign: 'center' }}>
           <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em', marginBottom: '4px' }}>
             Study<span style={{ color: 'var(--primary)' }}>Orbit</span>
