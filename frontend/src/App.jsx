@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { GraduationCap, Calendar, CheckCircle2, RotateCcw, X, Award } from 'lucide-react';
+import { GraduationCap, Calendar, CheckCircle2, RotateCcw, X, Award, ArrowUp } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -25,6 +25,20 @@ function MainApp() {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [activeTaskForTimer, setActiveTaskForTimer] = useState(null);
   const [streak, setStreak] = useState(0);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+
+  // Monitor window scroll for Scroll-to-Top quick navigation
+  useEffect(() => {
+    const handleWindowScroll = () => {
+      setShowScrollTop(window.scrollY > 280);
+    };
+    window.addEventListener('scroll', handleWindowScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleWindowScroll);
+  }, []);
+
+  const handleScrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   // Passed Exam Prompt state
   const [passedExamPrompt, setPassedExamPrompt] = useState(null);
@@ -333,6 +347,18 @@ function MainApp() {
         isOpen={isChatOpen}
         onClose={() => setIsChatOpen(false)}
       />
+
+      {/* Floating Scroll-to-Top Button for effortless navigation */}
+      {showScrollTop && (
+        <button
+          onClick={handleScrollToTop}
+          className="scroll-to-top-btn animate-fade-in"
+          title="Scroll back to top"
+          aria-label="Scroll to top"
+        >
+          <ArrowUp size={20} strokeWidth={2.5} />
+        </button>
+      )}
     </div>
   );
 }

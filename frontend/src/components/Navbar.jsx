@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   BookOpen, 
   Calendar, 
@@ -10,7 +10,10 @@ import {
   LogOut, 
   Flame,
   Sun,
-  Moon
+  Moon,
+  Sparkles,
+  ChevronDown,
+  User as UserIcon
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { Logo } from './Logo';
@@ -18,6 +21,19 @@ import { Logo } from './Logo';
 export const Navbar = ({ activeTab, setActiveTab, onOpenTimer, onOpenChat, streak = 1, user, onLogout }) => {
   const { theme, toggleTheme } = useTheme();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const profileMenuRef = useRef(null);
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(e.target)) {
+        setShowProfileMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -27,34 +43,60 @@ export const Navbar = ({ activeTab, setActiveTab, onOpenTimer, onOpenChat, strea
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
 
+  const getInitials = (name) => {
+    if (!name) return 'SO';
+    const parts = name.trim().split(' ');
+    if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+    return name.substring(0, 2).toUpperCase();
+  };
+
+  const firstName = user?.full_name ? user.full_name.trim().split(' ')[0] : 'Student';
+
   return (
     <>
-      {/* Top Navbar */}
-      <header style={{
-        backgroundColor: 'var(--bg-card)',
-        borderBottom: '1px solid var(--border)',
-        position: 'sticky',
-        top: 0,
-        zIndex: 40,
-        boxShadow: 'var(--shadow-sm)',
-        transition: 'background-color 0.2s ease, border-color 0.2s ease'
-      }}>
+      {/* Top Navbar with Glassmorphism */}
+      <header className="top-header">
         <div className="navbar-inner">
-          {/* Brand */}
+          {/* Brand Logo & Name */}
           <div 
             onClick={() => setActiveTab('dashboard')}
-            style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', flexShrink: 0 }}
+            style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '10px', 
+              cursor: 'pointer', 
+              flexShrink: 0,
+              transition: 'transform 0.18s ease'
+            }}
+            className="brand-logo-btn"
           >
-            <Logo size={32} style={{ borderRadius: '8px', filter: 'drop-shadow(0 2px 6px rgba(79, 70, 229, 0.35))' }} />
-            <div>
-              <span style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em', whiteSpace: 'nowrap' }}>
-                Study<span style={{ color: 'var(--primary)' }}>Orbit</span>
+            <Logo size={34} style={{ borderRadius: '10px', filter: 'drop-shadow(0 2px 8px rgba(79, 70, 229, 0.4))' }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ fontSize: '1.18rem', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.025em', whiteSpace: 'nowrap' }}>
+                Study<span style={{
+                  background: 'linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  display: 'inline-block'
+                }}>Orbit</span>
+              </span>
+              <span style={{
+                fontSize: '0.65rem',
+                fontWeight: 700,
+                padding: '2px 6px',
+                borderRadius: '6px',
+                background: 'var(--primary-light)',
+                color: 'var(--primary)',
+                letterSpacing: '0.04em',
+                textTransform: 'uppercase'
+              }} className="desktop-only">
+                AI
               </span>
             </div>
           </div>
 
-          {/* Desktop Center Nav */}
-          <nav className="desktop-only" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+          {/* Desktop Center Segmented Navigation */}
+          <nav className="desktop-only nav-center-pill">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
@@ -62,85 +104,164 @@ export const Navbar = ({ activeTab, setActiveTab, onOpenTimer, onOpenChat, strea
                 <button
                   key={item.id}
                   onClick={() => setActiveTab(item.id)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    padding: '7px 12px',
-                    borderRadius: '8px',
-                    border: 'none',
-                    fontSize: '0.82rem',
-                    fontWeight: isActive ? 700 : 500,
-                    color: isActive ? 'var(--primary)' : 'var(--text-secondary)',
-                    backgroundColor: isActive ? 'var(--primary-light)' : 'transparent',
-                    cursor: 'pointer',
-                    transition: 'all 0.15s ease'
-                  }}
+                  className={`nav-pill-btn ${isActive ? 'active' : ''}`}
                 >
-                  <Icon size={16} />
+                  <Icon size={15} strokeWidth={isActive ? 2.4 : 1.8} />
                   <span>{item.label}</span>
                 </button>
               );
             })}
           </nav>
 
-          {/* Right Actions */}
+          {/* Right Action Icons & Controls */}
           <div className="navbar-actions">
-            {/* Streak Badge */}
+            {/* Daily Streak Counter */}
             <div 
-              title="Daily Study Streak"
+              title={`${streak}-day study streak! Keep the momentum going`}
               className="nav-streak-badge"
               style={{
-                background: theme === 'dark' ? 'rgba(234, 88, 12, 0.15)' : '#fff7ed',
-                border: theme === 'dark' ? '1px solid rgba(234, 88, 12, 0.35)' : '1px solid #fed7aa',
+                background: theme === 'dark' ? 'rgba(234, 88, 12, 0.16)' : 'rgba(254, 215, 170, 0.35)',
+                border: theme === 'dark' ? '1px solid rgba(234, 88, 12, 0.4)' : '1px solid rgba(251, 146, 60, 0.4)',
               }}
             >
-              <Flame size={14} fill="#ea580c" color="#ea580c" />
-              <span>{streak}d</span>
+              <Flame size={15} fill="#ea580c" color="#ea580c" style={{ filter: 'drop-shadow(0 0 4px rgba(234, 88, 12, 0.5))' }} />
+              <span style={{ fontWeight: 800 }}>{streak}d</span>
             </div>
 
-            {/* Light / Dark Mode Toggle Button */}
-            <button
-              onClick={toggleTheme}
-              className="btn btn-ghost nav-icon-btn"
-              title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
-              aria-label="Toggle light/dark theme"
-            >
-              {theme === 'dark' ? (
-                <Sun size={17} color="#fbbf24" style={{ filter: 'drop-shadow(0 0 4px rgba(251, 191, 36, 0.4))' }} />
-              ) : (
-                <Moon size={17} color="var(--text-secondary)" />
-              )}
-            </button>
-
-            {/* Focus Timer Trigger */}
+            {/* Focus Pomodoro Timer Trigger */}
             <button
               onClick={onOpenTimer}
               className="btn btn-secondary nav-action-btn nav-btn-icon-mobile"
-              title="Focus Timer"
+              title="Focus Pomodoro Timer"
+              style={{ border: '1px solid var(--border)' }}
             >
               <Clock size={15} color="var(--primary)" />
               <span className="desktop-only">Timer</span>
             </button>
 
-            {/* AI Chatbot Trigger */}
+            {/* AI Academic Guide / Chatbot Trigger */}
             <button
               onClick={onOpenChat}
               className="btn btn-primary nav-action-btn nav-btn-icon-mobile"
-              title="Study Chatbot"
+              title="Study AI Guide"
+              style={{
+                background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
+                boxShadow: '0 2px 10px rgba(79, 70, 229, 0.35)'
+              }}
             >
-              <MessageSquare size={15} />
-              <span className="desktop-only">Chatbot</span>
+              <Sparkles size={14} />
+              <span className="desktop-only">AI Guide</span>
             </button>
 
-            {/* Logout Trigger */}
+            {/* Light / Dark Mode Toggle */}
             <button
-              onClick={() => setShowLogoutModal(true)}
-              className="btn btn-ghost nav-icon-btn"
-              title="Logout"
+              onClick={toggleTheme}
+              className="nav-icon-btn"
+              title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
+              aria-label="Toggle light/dark theme"
             >
-              <LogOut size={16} color="var(--text-muted)" />
+              {theme === 'dark' ? (
+                <Sun size={17} color="#fbbf24" style={{ filter: 'drop-shadow(0 0 5px rgba(251, 191, 36, 0.5))' }} />
+              ) : (
+                <Moon size={16} color="var(--text-secondary)" />
+              )}
             </button>
+
+            {/* User Avatar Chip & Profile Dropdown */}
+            <div style={{ position: 'relative' }} ref={profileMenuRef}>
+              <div 
+                className="nav-user-chip"
+                onClick={() => setShowProfileMenu(!showProfileMenu)}
+                title="Account Menu"
+              >
+                <div className="nav-user-avatar">
+                  {getInitials(user?.full_name)}
+                </div>
+                <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-primary)' }} className="desktop-only">
+                  {firstName}
+                </span>
+                <ChevronDown size={14} color="var(--text-muted)" className="desktop-only" />
+              </div>
+
+              {/* Profile Menu Popup */}
+              {showProfileMenu && (
+                <div style={{
+                  position: 'absolute',
+                  right: 0,
+                  top: 'calc(100% + 8px)',
+                  width: '240px',
+                  backgroundColor: 'var(--bg-card)',
+                  borderRadius: '14px',
+                  border: '1px solid var(--border)',
+                  boxShadow: 'var(--shadow-xl)',
+                  padding: '8px',
+                  zIndex: 50,
+                  animation: 'fadeIn 0.15s ease-out'
+                }}>
+                  <div style={{ padding: '8px 10px', borderBottom: '1px solid var(--border)', marginBottom: '6px' }}>
+                    <div style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--text-primary)' }}>
+                      {user?.full_name || 'Student'}
+                    </div>
+                    <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {user?.email || 'Logged In'}
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      setActiveTab('settings');
+                      setShowProfileMenu(false);
+                    }}
+                    style={{
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '8px 10px',
+                      borderRadius: '8px',
+                      border: 'none',
+                      background: 'none',
+                      color: 'var(--text-secondary)',
+                      fontSize: '0.82rem',
+                      cursor: 'pointer',
+                      textAlign: 'left'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-card-subtle)'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  >
+                    <Settings size={15} />
+                    <span>Study Preferences & Profile</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setShowProfileMenu(false);
+                      setShowLogoutModal(true);
+                    }}
+                    style={{
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '8px 10px',
+                      borderRadius: '8px',
+                      border: 'none',
+                      background: 'none',
+                      color: 'var(--danger)',
+                      fontSize: '0.82rem',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      marginTop: '2px'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.08)'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  >
+                    <LogOut size={15} />
+                    <span>Log Out</span>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </header>
