@@ -6,8 +6,13 @@ from app.models.student_profile import StudentProfile
 from app.models.subject import Subject
 from app.models.document import TextbookDocument, DocumentHierarchy
 from app.models.exam import Exam
+from app.models.schedule import StudySchedule, ScheduleTask
+from app.models.chat import ChatSession, ChatMessage
 from app.services.auth_service import hash_password
 from app.services.schedule_engine import ScheduleEngine
+import json
+import os
+from datetime import datetime, date
 
 logger = logging.getLogger(__name__)
 
@@ -222,6 +227,197 @@ def seed_demo_user():
         logger.info("Demo student account successfully seeded!")
     except Exception as e:
         logger.error(f"Error seeding demo user: {e}")
+        db.rollback()
+    finally:
+        db.close()
+
+def parse_dt(v):
+    if not v:
+        return None
+    if isinstance(v, datetime):
+        return v
+    try:
+        return datetime.fromisoformat(v)
+    except Exception:
+        return None
+
+def parse_d(v):
+    if not v:
+        return None
+    if isinstance(v, date):
+        return v
+    try:
+        return date.fromisoformat(v)
+    except Exception:
+        return None
+
+def seed_dhruv_users():
+    seed_file = os.path.join(os.path.dirname(__file__), "seed_dhruv_data.json")
+    if not os.path.exists(seed_file):
+        logger.warning(f"Seed file not found: {seed_file}")
+        return
+
+    db = SessionLocal()
+    try:
+        with open(seed_file, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        # 1. Users
+        for u in data.get("users", []):
+            if not db.query(User).filter(User.id == u["id"]).first():
+                db.add(User(
+                    id=u["id"],
+                    email=u["email"],
+                    hashed_password=u["hashed_password"],
+                    full_name=u["full_name"],
+                    created_at=parse_dt(u.get("created_at")) or datetime.utcnow()
+                ))
+        db.commit()
+
+        # 2. Profiles
+        for p in data.get("student_profiles", []):
+            if not db.query(StudentProfile).filter(StudentProfile.id == p["id"]).first():
+                db.add(StudentProfile(
+                    id=p["id"],
+                    user_id=p["user_id"],
+                    daily_weekday_hours=p.get("daily_weekday_hours", 3.0),
+                    daily_weekend_hours=p.get("daily_weekend_hours", 5.0),
+                    preferred_time_slot=p.get("preferred_time_slot", "evening"),
+                    study_days_per_week=p.get("study_days_per_week", 6),
+                    revision_buffer_days=p.get("revision_buffer_days", 5),
+                    break_interval_minutes=p.get("break_interval_minutes", 25),
+                    learning_pace=p.get("learning_pace", "moderate"),
+                    target_grade_goal=p.get("target_grade_goal", "A"),
+                    onboarding_completed=bool(p.get("onboarding_completed", True))
+                ))
+        db.commit()
+
+        # 3. Subjects
+        for s in data.get("subjects", []):
+            if not db.query(Subject).filter(Subject.id == s["id"]).first():
+                db.add(Subject(
+                    id=s["id"],
+                    user_id=s["user_id"],
+                    name=s["name"],
+                    code=s.get("code", ""),
+                    color_code=s.get("color_code", "#3B82F6"),
+                    difficulty_rating=s.get("difficulty_rating", 3)
+                ))
+        db.commit()
+
+        # 4. Exams
+        for e in data.get("exams", []):
+            if not db.query(Exam).filter(Exam.id == e["id"]).first():
+                db.add(Exam(
+                    id=e["id"],
+                    user_id=e["user_id"],
+                    subject_id=e.get("subject_id"),
+                    title=e["title"],
+                    exam_date=parse_d(e.get("exam_date")),
+                    exam_type=e.get("exam_type", "Final"),
+                    total_marks=e.get("total_marks", 100),
+                    subject_ids_json=e.get("subject_ids_json", []),
+                    subject_scopes_json=e.get("subject_scopes_json", {}),
+                    target_chapters_json=e.get("target_chapters_json", []),
+                    weight_priority=e.get("weight_priority", 3),
+                    notes=e.get("notes"),
+                    is_completed=bool(e.get("is_completed", False))
+                ))
+        db.commit()
+
+        # 5. Documents
+        for d in data.get("textbook_documents", []):
+            if not db.query(TextbookDocument).filter(TextbookDocument.id == d["id"]).first():
+                db.add(TextbookDocument(
+                    id=d["id"],
+                    subject_id=d["subject_id"],
+                    file_name=d["file_name"],
+                    file_path=d.get("file_path", ""),
+                    file_size=d.get("file_size", 0),
+                    total_pages=d.get("total_pages", 0),
+                    upload_date=parse_dt(d.get("upload_date")) or datetime.utcnow(),
+                    status=d.get("status", "ready")
+                ))
+        db.commit()
+
+        # 6. Hierarchies
+        for h in data.get("document_hierarchies", []):
+            if not db.query(DocumentHierarchy).filter(DocumentHierarchy.id == h["id"]).first():
+                db.add(DocumentHierarchy(
+                    id=h["id"],
+                    document_id=h["document_id"],
+                    subject_id=h["subject_id"],
+                    structure_json=h["structure_json"],
+                    summary_markdown=h.get("summary_markdown", ""),
+                    total_chapters=h.get("total_chapters", 0),
+                    total_topics=h.get("total_topics", 0)
+                ))
+        db.commit()
+
+        # 7. Schedules
+        for sc in data.get("study_schedules", []):
+            if not db.query(StudySchedule).filter(StudySchedule.id == sc["id"]).first():
+                db.add(StudySchedule(
+                    id=sc["id"],
+                    user_id=sc["user_id"],
+                    exam_id=sc.get("exam_id"),
+                    title=sc["title"],
+                    start_date=parse_d(sc.get("start_date")),
+                    target_completion_date=parse_d(sc.get("target_completion_date")),
+                    total_hours_allocated=sc.get("total_hours_allocated", 0.0),
+                    status=sc.get("status", "active"),
+                    created_at=parse_dt(sc.get("created_at")) or datetime.utcnow()
+                ))
+        db.commit()
+
+        # 8. Schedule Tasks
+        for t in data.get("schedule_tasks", []):
+            if not db.query(ScheduleTask).filter(ScheduleTask.id == t["id"]).first():
+                db.add(ScheduleTask(
+                    id=t["id"],
+                    schedule_id=t["schedule_id"],
+                    user_id=t["user_id"],
+                    subject_id=t["subject_id"],
+                    scheduled_date=parse_d(t.get("scheduled_date")),
+                    chapter_title=t.get("chapter_title", ""),
+                    topic_title=t.get("topic_title", ""),
+                    subtopic_title=t.get("subtopic_title"),
+                    page_start=t.get("page_start"),
+                    page_end=t.get("page_end"),
+                    estimated_minutes=t.get("estimated_minutes", 30),
+                    status=t.get("status", "pending"),
+                    is_revision=bool(t.get("is_revision", False)),
+                    completed_at=parse_dt(t.get("completed_at")),
+                    notes=t.get("notes")
+                ))
+        db.commit()
+
+        # 9. Chat Sessions
+        for cs in data.get("chat_sessions", []):
+            if not db.query(ChatSession).filter(ChatSession.id == cs["id"]).first():
+                db.add(ChatSession(
+                    id=cs["id"],
+                    user_id=cs["user_id"],
+                    title=cs.get("title", "Study Guidance"),
+                    created_at=parse_dt(cs.get("created_at")) or datetime.utcnow()
+                ))
+        db.commit()
+
+        # 10. Chat Messages
+        for cm in data.get("chat_messages", []):
+            if not db.query(ChatMessage).filter(ChatMessage.id == cm["id"]).first():
+                db.add(ChatMessage(
+                    id=cm["id"],
+                    session_id=cm["session_id"],
+                    role=cm["role"],
+                    content=cm["content"],
+                    citations=cm.get("citations", []),
+                    created_at=parse_dt(cm.get("created_at")) or datetime.utcnow()
+                ))
+        db.commit()
+        logger.info("Direct push of dhruvmodi accounts successfully completed!")
+    except Exception as e:
+        logger.error(f"Error seeding dhruv accounts: {e}")
         db.rollback()
     finally:
         db.close()

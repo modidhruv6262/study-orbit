@@ -8,8 +8,9 @@ import app.models  # Ensure all SQLAlchemy models are registered
 Base.metadata.create_all(bind=engine)
 
 # Auto-seed demo user account if not present
-from app.seed import seed_demo_user
+from app.seed import seed_demo_user, seed_dhruv_users
 seed_demo_user()
+seed_dhruv_users()
 
 app = FastAPI(
     title=settings.APP_NAME,
