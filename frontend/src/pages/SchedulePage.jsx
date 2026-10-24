@@ -5,6 +5,7 @@ import {
   Square, 
   RotateCcw, 
   Download, 
+  FileText,
   Sparkles, 
   Play, 
   Clock, 
@@ -14,14 +15,21 @@ import {
   CheckCircle2
 } from 'lucide-react';
 import { triggerCelebration } from '../utils/confettiHelper';
+import { exportScheduleToPdf } from '../utils/schedulePdfExporter';
 import { apiClient } from '../api/client';
+import { useAuth } from '../contexts/AuthContext';
+import { useAppSettings } from '../contexts/AppSettingsContext';
 import SectionHeader from '../components/SectionHeader';
 
 export const SchedulePage = ({ onStartTaskTimer }) => {
+  const { user } = useAuth();
+  const { settings } = useAppSettings();
   const [schedule, setSchedule] = useState(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [rebalancing, setRebalancing] = useState(false);
+  const [exportingPdf, setExportingPdf] = useState(false);
+  const [exportingIcs, setExportingIcs] = useState(false);
   const [filterSubject, setFilterSubject] = useState('ALL');
   const [timeframeFilter, setTimeframeFilter] = useState('UPCOMING_7'); // TODAY, UPCOMING_7, ALL
 
@@ -96,15 +104,46 @@ export const SchedulePage = ({ onStartTaskTimer }) => {
     }
   };
 
-  const handleExportICS = () => {
+  const handleExportPDF = () => {
+    if (!schedule || !schedule.tasks || schedule.tasks.length === 0) {
+      alert('No study schedule tasks available to export.');
+      return;
+    }
+    try {
+      setExportingPdf(true);
+      exportScheduleToPdf({
+        schedule,
+        user,
+        themeColor: settings?.themeColor || 'indigo'
+      });
+    } catch (err) {
+      console.error('PDF Export Error:', err);
+      alert(`Could not generate PDF: ${err.message}`);
+    } finally {
+      setExportingPdf(false);
+    }
+  };
+
+  const handleExportICS = async () => {
     if (!schedule) return;
-    const url = `/api/schedules/${schedule.id}/export.ics`;
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `study_schedule_${schedule.id}.ics`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    try {
+      setExportingIcs(true);
+      const icsData = await apiClient.get(`/schedules/${schedule.id}/export.ics`);
+      const blob = new Blob([icsData], { type: 'text/calendar;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `study_schedule_${schedule.id}.ics`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (err) {
+      console.error('Calendar Export Error:', err);
+      alert(`Failed to export .ics calendar: ${err.message}`);
+    } finally {
+      setExportingIcs(false);
+    }
   };
 
   const todayStr = new Date().toISOString().split('T')[0];
@@ -161,14 +200,25 @@ export const SchedulePage = ({ onStartTaskTimer }) => {
             </button>
 
             <button
-              onClick={handleExportICS}
-              disabled={!schedule}
+              onClick={handleExportPDF}
+              disabled={!schedule || exportingPdf}
               className="btn btn-secondary"
-              style={{ fontSize: '0.82rem', padding: '6px 14px' }}
+              style={{ fontSize: '0.82rem', padding: '6px 14px', display: 'flex', alignItems: 'center', gap: '6px' }}
+              title="Download beautifully styled PDF timetable"
+            >
+              <FileText size={14} style={{ color: 'var(--primary)' }} />
+              <span>{exportingPdf ? 'Generating PDF...' : 'Export (PDF)'}</span>
+            </button>
+
+            <button
+              onClick={handleExportICS}
+              disabled={!schedule || exportingIcs}
+              className="btn btn-secondary"
+              style={{ fontSize: '0.82rem', padding: '6px 14px', display: 'flex', alignItems: 'center', gap: '6px' }}
               title="Download .ics file for Google or Apple Calendar"
             >
               <Download size={14} />
-              <span>Export (.ics)</span>
+              <span>{exportingIcs ? 'Exporting...' : 'Export (.ics)'}</span>
             </button>
 
             <button
