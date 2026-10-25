@@ -14,6 +14,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { Logo } from '../components/Logo';
+import { AuthLoadingScreen } from '../components/AuthLoadingScreen';
 
 export const AuthPage = ({ initialRegister = false, onBackToLanding }) => {
   const { theme, toggleTheme } = useTheme();
@@ -306,11 +307,16 @@ export const AuthPage = ({ initialRegister = false, onBackToLanding }) => {
             className="btn btn-primary"
             style={{ width: '100%', padding: '12px', fontSize: '0.95rem', marginTop: '6px' }}
           >
-            <span>{submitting ? 'Please wait...' : isRegister ? 'Create Account' : 'Sign In'}</span>
+            <span>{submitting ? (isRegister ? 'Creating Account...' : 'Signing In...') : isRegister ? 'Create Account' : 'Sign In'}</span>
             <ArrowRight size={16} />
           </button>
         </form>
       </div>
+
+      {/* Modern Authenticating Loading Screen */}
+      {submitting && (
+        <AuthLoadingScreen isRegister={isRegister} />
+      )}
     </div>
   );
 };

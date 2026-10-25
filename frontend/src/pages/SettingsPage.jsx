@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Settings, Save, Clock, Calendar, CheckCircle2, ShieldCheck } from 'lucide-react';
 import { apiClient } from '../api/client';
+import { SectionLoader } from '../components/SectionLoader';
 import SectionHeader from '../components/SectionHeader';
 
 export const SettingsPage = () => {
@@ -14,16 +15,20 @@ export const SettingsPage = () => {
     learning_pace: 'moderate',
     target_grade_goal: 'A'
   });
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
 
   useEffect(() => {
     const loadProfile = async () => {
       try {
+        setLoading(true);
         const data = await apiClient.get('/profile');
         if (data) setProfile(data);
       } catch (err) {
         console.error('Failed to load profile:', err);
+      } finally {
+        setLoading(false);
       }
     };
     loadProfile();
@@ -42,6 +47,27 @@ export const SettingsPage = () => {
       setSaving(false);
     }
   };
+
+  if (loading) {
+    return (
+      <div style={{ maxWidth: '680px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        <SectionHeader
+          title="Student Study Preferences"
+          subtitle="Configure your daily study capacity and scheduling rules. The AI scheduler respects these bounds."
+          icon={Settings}
+          iconColor="var(--primary)"
+          iconBg="var(--primary-light)"
+          tag="Preferences"
+        />
+        <SectionLoader 
+          message="Loading your study preferences & timetable capacity..." 
+          subtitle="Fetching your customized study hours and buffer configurations..." 
+          type="cards" 
+          minHeight="320px" 
+        />
+      </div>
+    );
+  }
 
   return (
     <div style={{ maxWidth: '680px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '24px' }}>

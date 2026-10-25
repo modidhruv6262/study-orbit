@@ -23,6 +23,7 @@ import { apiClient } from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
 import { CountdownCard } from '../components/CountdownCard';
 import { DashboardStopwatch } from '../components/DashboardStopwatch';
+import { SectionLoader } from '../components/SectionLoader';
 import SectionHeader from '../components/SectionHeader';
 
 export const DashboardPage = ({ setActiveTab, onStartTaskTimer }) => {
@@ -96,8 +97,13 @@ export const DashboardPage = ({ setActiveTab, onStartTaskTimer }) => {
 
   if (loading) {
     return (
-      <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
-        <p>Loading your study dashboard & exam schedule...</p>
+      <div className="animate-fade-in" style={{ padding: '8px 0' }}>
+        <SectionLoader 
+          message="Loading your study dashboard & exam schedule..." 
+          subtitle="Calculating streak, upcoming tests, and daily learning targets..." 
+          type="dashboard" 
+          minHeight="55vh" 
+        />
       </div>
     );
   }

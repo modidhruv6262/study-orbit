@@ -19,6 +19,7 @@ import { exportScheduleToPdf } from '../utils/schedulePdfExporter';
 import { apiClient } from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
 import { useAppSettings } from '../contexts/AppSettingsContext';
+import { SectionLoader } from '../components/SectionLoader';
 import SectionHeader from '../components/SectionHeader';
 
 export const SchedulePage = ({ onStartTaskTimer }) => {
@@ -340,7 +341,13 @@ export const SchedulePage = ({ onStartTaskTimer }) => {
       )}
 
       {/* Daily Grouped Timetable */}
-      {!schedule || schedule.tasks.length === 0 ? (
+      {loading ? (
+        <SectionLoader 
+          message="Loading daily timetable & paced study blocks..." 
+          subtitle="Calculating exam buffer pace and allocating tasks..." 
+          type="schedule" 
+        />
+      ) : !schedule || schedule.tasks.length === 0 ? (
         <div className="glass-card" style={{ textAlign: 'center', padding: '40px 20px' }}>
           <CalendarIcon size={44} color="var(--primary)" style={{ margin: '0 auto 12px' }} />
           <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '8px' }}>

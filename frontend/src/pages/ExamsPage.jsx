@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { apiClient } from '../api/client';
 import { CountdownCard } from '../components/CountdownCard';
+import { SectionLoader } from '../components/SectionLoader';
 import SectionHeader from '../components/SectionHeader';
 
 export const ExamsPage = () => {
@@ -235,7 +236,13 @@ export const ExamsPage = () => {
       </div>
 
       {/* Exam Cards Grid */}
-      {filteredExams.length === 0 ? (
+      {loading ? (
+        <SectionLoader 
+          message="Loading exam targets & countdowns..." 
+          subtitle="Fetching your upcoming exam schedule and test dates..." 
+          type="cards" 
+        />
+      ) : filteredExams.length === 0 ? (
         <div className="glass-card" style={{ padding: '36px 16px', textAlign: 'center' }}>
           <h3 style={{ fontSize: '1.05rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px' }}>
             {filterTab === 'completed' ? 'No Completed Exams' : 'No Exams Found'}

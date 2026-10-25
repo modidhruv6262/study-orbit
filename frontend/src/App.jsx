@@ -16,6 +16,7 @@ import { SchedulePage } from './pages/SchedulePage';
 import { ExamsPage } from './pages/ExamsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { AppSettingsPage } from './pages/AppSettingsPage';
+import { AuthLoadingScreen } from './components/AuthLoadingScreen';
 import { AppSettingsProvider } from './contexts/AppSettingsContext';
 import { apiClient } from './api/client';
 
@@ -120,27 +121,10 @@ function MainApp() {
 
   if (loading) {
     return (
-      <div style={{
-        minHeight: '100vh',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: 'var(--bg-main)',
-        color: 'var(--text-primary)',
-        fontFamily: 'sans-serif',
-        gap: '14px'
-      }}>
-        <Logo size={56} style={{ filter: 'drop-shadow(0 6px 18px rgba(79, 70, 229, 0.45))' }} />
-        <div style={{ textAlign: 'center' }}>
-          <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em', marginBottom: '4px' }}>
-            Study<span style={{ color: 'var(--primary)' }}>Orbit</span>
-          </h3>
-          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-            Loading your courses and timetable...
-          </p>
-        </div>
-      </div>
+      <AuthLoadingScreen 
+        title="Starting StudyOrbit" 
+        subtitle="Verifying credentials and loading your academic workspace..." 
+      />
     );
   }
 

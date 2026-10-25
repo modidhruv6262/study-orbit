@@ -16,6 +16,7 @@ import {
   X
 } from 'lucide-react';
 import { apiClient } from '../api/client';
+import { SectionLoader } from '../components/SectionLoader';
 import SectionHeader from '../components/SectionHeader';
 
 export const TextbooksPage = () => {
@@ -337,7 +338,14 @@ export const TextbooksPage = () => {
             compact
           />
 
-          {subjects.length === 0 ? (
+          {loading ? (
+            <SectionLoader 
+              message="Loading enrolled courses..." 
+              subtitle="Fetching your course list and outlines..." 
+              type="cards" 
+              minHeight="220px" 
+            />
+          ) : subjects.length === 0 ? (
             <div className="glass-card" style={{ padding: '24px', textAlign: 'center' }}>
               <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: '12px' }}>
                 No courses added yet. Add your first subject to start building your study plan.
@@ -394,7 +402,14 @@ export const TextbooksPage = () => {
 
         {/* Selected Subject Coursework & Hierarchy Details */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          {selectedSubject ? (
+          {loading ? (
+            <SectionLoader 
+              message="Loading course outline & syllabus chapters..." 
+              subtitle="Retrieving chapter breakdown & page ranges..." 
+              type="cards" 
+              minHeight="360px" 
+            />
+          ) : selectedSubject ? (
             <div className="glass-card" style={{ padding: '20px' }}>
               {/* Header inside card */}
               <SectionHeader
