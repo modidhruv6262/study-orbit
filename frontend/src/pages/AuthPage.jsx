@@ -134,14 +134,23 @@ export const AuthPage = ({ initialRegister = false, onBackToLanding }) => {
           </p>
         </div>
 
-        {/* Tab switch */}
-        <div style={{
-          display: 'flex',
-          backgroundColor: 'var(--bg-card-subtle)',
-          borderRadius: '8px',
-          padding: '4px',
-          marginBottom: '20px'
-        }}>
+        {submitting ? (
+          <AuthLoadingScreen 
+            inline 
+            isRegister={isRegister} 
+            title={isRegister ? 'Creating Account' : 'Signing In'}
+            subtitle={isRegister ? 'Setting up your student profile and study workspace...' : 'Connecting securely to your study workspace...'}
+          />
+        ) : (
+          <>
+            {/* Tab switch */}
+            <div style={{
+              display: 'flex',
+              backgroundColor: 'var(--bg-card-subtle)',
+              borderRadius: '8px',
+              padding: '4px',
+              marginBottom: '20px'
+            }}>
           <button
             type="button"
             onClick={() => { setIsRegister(false); setError(''); }}
@@ -301,22 +310,19 @@ export const AuthPage = ({ initialRegister = false, onBackToLanding }) => {
             </div>
           )}
 
-          <button
-            type="submit"
-            disabled={submitting}
-            className="btn btn-primary"
-            style={{ width: '100%', padding: '12px', fontSize: '0.95rem', marginTop: '6px' }}
-          >
-            <span>{submitting ? (isRegister ? 'Creating Account...' : 'Signing In...') : isRegister ? 'Create Account' : 'Sign In'}</span>
-            <ArrowRight size={16} />
-          </button>
-        </form>
-      </div>
-
-      {/* Modern Authenticating Loading Screen */}
-      {submitting && (
-        <AuthLoadingScreen isRegister={isRegister} />
+            <button
+              type="submit"
+              disabled={submitting}
+              className="btn btn-primary"
+              style={{ width: '100%', padding: '12px', fontSize: '0.95rem', marginTop: '6px' }}
+            >
+              <span>{isRegister ? 'Create Account' : 'Sign In'}</span>
+              <ArrowRight size={16} />
+            </button>
+          </form>
+        </>
       )}
+      </div>
     </div>
   );
 };
